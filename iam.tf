@@ -53,6 +53,7 @@ resource "aws_iam_policy" "replication" {
         "s3:ReplicateDelete",
         "s3:ReplicateTags",
         "s3:ObjectOwnerOverrideToBucketOwner"
+        
       ],
       "Effect": "Allow",
       "Resource": "arn:aws:s3:::${local.destination_bucket_name}/*"

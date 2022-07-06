@@ -22,18 +22,89 @@ provider "aws" {
   skip_requesting_account_id  = true
 }
 
+resource "aws_iam_role" "this" {
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Effect": "Allow",
+      "Sid": ""
+    }
+  ]
+}
+EOF
+}
+
 data "aws_caller_identity" "current" {}
+
+data "aws_iam_policy_document" "bucket_policy" {
+  statement {
+    principals {
+      type        = "AWS"
+      identifiers = [aws_iam_role.this.arn]
+    }
+
+    actions = [
+      "s3:ListBucket",
+    ]
+
+    resources = [
+      "arn:aws:s3:::${local.bucket_name}",
+    ]
+  }
+}
+
+data "aws_iam_policy_document" "bucket_policy_dest" {
+  statement {
+    principals {
+      type        = "AWS"
+      identifiers = [aws_iam_role.this.arn]
+    }
+
+    actions = [
+      "s3:ListBucket",
+    ]
+
+    resources = [
+      "arn:aws:s3:::${local.destination_bucket_name}",
+    ]
+  }
+}
 
 resource "random_pet" "this" {
   length = 2
+}
+
+
+data "aws_iam_policy_document" "kms" {
+  statement {
+    principals {
+      type        = "AWS"
+      identifiers = [aws_iam_role.this.arn]
+    }
+
+    actions = [
+      "s3:ListBucket",
+    ]
+
+    resources = [
+      "arn:aws:s3:::${local.bucket_name}",
+    ]
+  }
 }
 
 resource "aws_kms_key" "replica" {
   provider = aws.replica
 
   description             = "S3 bucket replication KMS key"
-  deletion_window_in_days = 7
+  deletion_window_in_days = 30
 }
+
 
 module "replica_bucket" {
   source = "terraform-aws-modules/s3-bucket/aws"
@@ -44,7 +115,19 @@ module "replica_bucket" {
   }
 
   bucket = local.destination_bucket_name
-  acl    = "private"
+  acl    = "public-read"
+
+  # Bucket policies
+  attach_policy                         = true
+  policy                                = data.aws_iam_policy_document.bucket_policy_dest.json
+  attach_deny_insecure_transport_policy = true
+  attach_require_latest_tls_policy      = true
+
+  # S3 bucket-level Public Access Block configuration
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 
   versioning = {
     enabled = true
@@ -56,8 +139,21 @@ module "s3_bucket" {
   version = "3.3.0"
 
   bucket = local.bucket_name
-  acl    = "private"
 
+  acl              = "public-read"       #private public-read public-read-write authenticated-read aws-exec-read log-delivery-write
+  # object_ownership = "BucketOwnerFullControl" # BucketOwnerFullControl BucketOwnerRead BucketOwnerWrite BucketOwnerReadWrite
+
+  # Bucket policies
+  attach_policy                         = true
+  policy                                = data.aws_iam_policy_document.bucket_policy.json
+  attach_deny_insecure_transport_policy = true
+  attach_require_latest_tls_policy      = true
+
+  # S3 bucket-level Public Access Block configuration
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
   versioning = {
     enabled = true
   }
@@ -67,18 +163,18 @@ module "s3_bucket" {
 
     rules = [
       {
-        id       = "something-with-kms-and-filter"
+        id       = "enable-something"
         status   = true
         priority = 10
 
-        delete_marker_replication = false
-        existing_object_replication = "Enabled"
+        delete_marker_replication = true
+        # existing_object_replication = "Enabled"
 
         destination = {
           bucket        = "arn:aws:s3:::${local.destination_bucket_name}"
           storage_class = "STANDARD"
 
-          replica_kms_key_id = aws_kms_key.replica.arn
+          # replica_kms_key_id = aws_kms_key.replica.arn
           account_id         = data.aws_caller_identity.current.account_id
 
           access_control_translation = {
@@ -90,30 +186,31 @@ module "s3_bucket" {
             minutes = 15
           }
 
-#          metrics = {
-#            status  = "Enabled"
-#            minutes = 15
-#          }
+          metrics = {
+            status  = "Enabled"
+            minutes = 15
+          }
 
           source_selection_criteria = {
-            replica_modifications = {
-              status = "Enabled"
-            }
-            sse_kms_encrypted_objects = {
-              enabled = true
-            }
+          replica_modifications = {
+            status = "Enabled"
           }
+          sse_kms_encrypted_objects = {
+            enabled = false
+          }
+        }
 
-          filter = {
-            prefix = ""
-            tags = {
-              ReplicateMe = "Yes"
-            }
-          }
+          # filter = {
+          #   prefix = ""
+          #   tags = {
+          #     ReplicateMe = "Yes"
+          #   }
+          # }
         }
       },
     ]
-  }
 
+  }
+  depends_on = [module.replica_bucket]
 }
 
