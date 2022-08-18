@@ -44,15 +44,36 @@ data "aws_caller_identity" "current" {}
 
 data "aws_iam_policy_document" "bucket_policy" {
   statement {
+    sid = "statement1"
     principals {
       type        = "AWS"
       identifiers = [aws_iam_role.this.arn]
     }
-
     actions = [
-      "s3:ListBucket",
+      "s3:PutObject",
     ]
+    resources = [
+      "arn:aws:s3:::${local.bucket_name}/*",
+    ]
+    condition {
+      test = "StringEquals"
+      values = [
+        "STANDARD_IA",
+      ]
+      variable = "s3:x-amz-storage-class"
+    }
+  }
 
+  statement {
+    sid    = "Stmt1618417100081"
+    effect = "Deny"
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+    actions = [
+      "s3:DeleteBucket",
+    ]
     resources = [
       "arn:aws:s3:::${local.bucket_name}",
     ]
@@ -61,15 +82,37 @@ data "aws_iam_policy_document" "bucket_policy" {
 
 data "aws_iam_policy_document" "bucket_policy_dest" {
   statement {
+    sid = "statement1"
     principals {
       type        = "AWS"
       identifiers = [aws_iam_role.this.arn]
     }
-
     actions = [
-      "s3:ListBucket",
+      "s3:PutObject",
     ]
+    resources = [
+      "arn:aws:s3:::${local.destination_bucket_name}/*",
+    ]
+    condition {
+      test = "StringEquals"
+      values = [
+        "STANDARD_IA",
+      ]
+      variable = "s3:x-amz-storage-class"
+    }
 
+  }
+
+  statement {
+    sid    = "Stmt1618417100081"
+    effect = "Deny"
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+    actions = [
+      "s3:DeleteBucket",
+    ]
     resources = [
       "arn:aws:s3:::${local.destination_bucket_name}",
     ]
@@ -107,7 +150,7 @@ resource "aws_kms_key" "replica" {
 
 
 module "replica_bucket" {
-  source = "terraform-aws-modules/s3-bucket/aws"
+  source  = "terraform-aws-modules/s3-bucket/aws"
   version = "3.3.0"
 
   providers = {
@@ -115,7 +158,7 @@ module "replica_bucket" {
   }
 
   bucket = local.destination_bucket_name
-  acl    = "public-read"
+  acl    = "aws-exec-read"
 
   # Bucket policies
   attach_policy                         = true
@@ -135,12 +178,12 @@ module "replica_bucket" {
 }
 
 module "s3_bucket" {
-  source = "terraform-aws-modules/s3-bucket/aws"
+  source  = "terraform-aws-modules/s3-bucket/aws"
   version = "3.3.0"
 
   bucket = local.bucket_name
 
-  acl              = "public-read"       #private public-read public-read-write authenticated-read aws-exec-read log-delivery-write
+  acl = "aws-exec-read" #private public-read public-read-write authenticated-read aws-exec-read log-delivery-write
   # object_ownership = "BucketOwnerFullControl" # BucketOwnerFullControl BucketOwnerRead BucketOwnerWrite BucketOwnerReadWrite
 
   # Bucket policies
@@ -175,7 +218,7 @@ module "s3_bucket" {
           storage_class = "STANDARD"
 
           # replica_kms_key_id = aws_kms_key.replica.arn
-          account_id         = data.aws_caller_identity.current.account_id
+          account_id = data.aws_caller_identity.current.account_id
 
           access_control_translation = {
             owner = "Destination"
@@ -192,13 +235,13 @@ module "s3_bucket" {
           }
 
           source_selection_criteria = {
-          replica_modifications = {
-            status = "Enabled"
+            replica_modifications = {
+              status = "Enabled"
+            }
+            sse_kms_encrypted_objects = {
+              enabled = false
+            }
           }
-          sse_kms_encrypted_objects = {
-            enabled = false
-          }
-        }
 
           # filter = {
           #   prefix = ""
