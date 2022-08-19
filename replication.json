@@ -1,0 +1,18 @@
+{
+  "Rules": [
+    {
+      "Status": "Enabled",
+      "DeleteMarkerReplication": { "Status": "Enabled" },
+      "SourceSelectionCriteria": {
+        "ReplicaModifications": {
+          "Status": "Enabled"
+        }
+      },
+      "Destination": {
+        "Bucket": "${bucketarn}"
+      },
+      "Priority": 1
+    }
+  ],
+  "Role": "${rolearn}"
+}
