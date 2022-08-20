@@ -243,12 +243,12 @@ module "s3_bucket" {
             }
           }
 
-          # filter = {
-          #   prefix = ""
-          #   tags = {
-          #     ReplicateMe = "Yes"
-          #   }
-          # }
+          filter = {
+            prefix = "*"
+            # tags = {
+            #   ReplicateMe = "Yes"
+            # }
+          }
         }
       },
     ]
@@ -257,18 +257,18 @@ module "s3_bucket" {
   depends_on = [module.replica_bucket]
 }
 
-data "template_file" "replication_dest" {
-  template = "${file("replication.json")}"
-  vars = {
-    bucketarn = "${module.replica_bucket.s3_bucket_arn}"
-    rolearn = "${aws_iam_role.replication.arn}"
-  }
-}
+# data "template_file" "replication_dest" {
+#   template = "${file("replication.json")}"
+#   vars = {
+#     bucketarn = "${module.replica_bucket.s3_bucket_arn}"
+#     rolearn = "${aws_iam_role.replication.arn}"
+#   }
+# }
 
-resource "null_resource" "awsdestrepl" {
-  provisioner "local-exec" {
-    command = "aws s3api put-bucket-replication --bucket ${local.bucket_name} --replication-configuration ${data.template_file.replication_dest.rendered}"
-  }
-  depends_on = [module.replica_bucket]
+# resource "null_resource" "awsdestrepl" {
+#   provisioner "local-exec" {
+#     command = "aws s3api put-bucket-replication --bucket ${local.bucket_name} --replication-configuration ${data.template_file.replication_dest.rendered}"
+#   }
+#   depends_on = [module.replica_bucket]
 
-}
+# }

@@ -1,18 +1,36 @@
 {
+  "Role": "arn:aws:iam::097292812202:role/s3-bucket-replication-evolved-whale",
   "Rules": [
     {
+      "ID": "enable-something",
+      "Priority": 10,
+      "Filter": {
+        "Prefix": ""
+      },
       "Status": "Enabled",
-      "DeleteMarkerReplication": { "Status": "Enabled" },
-      "SourceSelectionCriteria": {
-        "ReplicaModifications": {
-          "Status": "Enabled"
+      "Destination": {
+        "Bucket": "arn:aws:s3:::replica-testbucket0011100-evolved-whale",
+        "Account": "097292812202",
+        "StorageClass": "STANDARD",
+        "AccessControlTranslation": {
+          "Owner": "Destination"
+        },
+        "ReplicationTime": {
+          "Status": "Enabled",
+          "Time": {
+            "Minutes": 15
+          }
+        },
+        "Metrics": {
+          "Status": "Enabled",
+          "EventThreshold": {
+            "Minutes": 15
+          }
         }
       },
-      "Destination": {
-        "Bucket": "${bucketarn}"
-      },
-      "Priority": 1
+      "DeleteMarkerReplication": {
+        "Status": "Enabled"
+      }
     }
-  ],
-  "Role": "${rolearn}"
+  ]
 }

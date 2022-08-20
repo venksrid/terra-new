@@ -11,3 +11,7 @@ terraform plan
 terraform apply
 
 
+## Enable replication sync
+
+aws s3api put-bucket-replication --bucket <bucket_name> --replication-configuration  file://replication.json
+
