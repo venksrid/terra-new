@@ -141,12 +141,12 @@ data "aws_iam_policy_document" "kms" {
   }
 }
 
-#resource "aws_kms_key" "replica" {
-#  provider = aws.replica
+resource "aws_kms_key" "replica" {
+ provider = aws.replica
 
-#  description             = "S3 bucket replication KMS key"
-#  deletion_window_in_days = 30
-#}
+ description             = "S3 bucket replication KMS key"
+ deletion_window_in_days = 30
+}
 
 
 module "replica_bucket" {
@@ -243,12 +243,12 @@ module "s3_bucket" {
             }
           }
 
-#           filter = {
-#             prefix = "*"
+          # filter = {
+          #   prefix = "*"
           #   tags = {
           #     ReplicateMe = "Yes"
           #   }
-#           }
+          # }
         }
       },
     ]
