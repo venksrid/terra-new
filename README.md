@@ -16,5 +16,4 @@ terraform apply
 aws s3api put-bucket-replication --bucket <bucket_name> --replication-configuration  file://replication.json
 
 
-August 23, 2022, 10:39:11 (UTC+05:30)
 
