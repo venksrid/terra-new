@@ -141,12 +141,12 @@ data "aws_iam_policy_document" "kms" {
   }
 }
 
-resource "aws_kms_key" "replica" {
-  provider = aws.replica
+#resource "aws_kms_key" "replica" {
+#  provider = aws.replica
 
-  description             = "S3 bucket replication KMS key"
-  deletion_window_in_days = 30
-}
+#  description             = "S3 bucket replication KMS key"
+#  deletion_window_in_days = 30
+#}
 
 
 module "replica_bucket" {
@@ -206,7 +206,7 @@ module "s3_bucket" {
 
     rules = [
       {
-        id       = "enable-something"
+        id       = "Enable-replication-Dest"
         status   = true
         priority = 10
 
@@ -215,7 +215,7 @@ module "s3_bucket" {
 
         destination = {
           bucket        = "arn:aws:s3:::${local.destination_bucket_name}"
-          storage_class = "STANDARD"
+          storage_class = "STANDARD_IA"
 
           # replica_kms_key_id = aws_kms_key.replica.arn
           account_id = data.aws_caller_identity.current.account_id
@@ -243,12 +243,12 @@ module "s3_bucket" {
             }
           }
 
-          filter = {
-            prefix = "*"
-            # tags = {
-            #   ReplicateMe = "Yes"
-            # }
-          }
+#           filter = {
+#             prefix = "*"
+          #   tags = {
+          #     ReplicateMe = "Yes"
+          #   }
+#           }
         }
       },
     ]
@@ -257,18 +257,18 @@ module "s3_bucket" {
   depends_on = [module.replica_bucket]
 }
 
-# data "template_file" "replication_dest" {
-#   template = "${file("replication.json")}"
-#   vars = {
-#     bucketarn = "${module.replica_bucket.s3_bucket_arn}"
-#     rolearn = "${aws_iam_role.replication.arn}"
-#   }
-# }
+#data "template_file" "replication_dest" {
+#  template = "${file("replication.json")}"
+#  vars = {
+#    bucketarn = "${module.replica_bucket.s3_bucket_arn}"
+#    rolearn = "${aws_iam_role.replication.arn}"
+#  }
+#}
 
-# resource "null_resource" "awsdestrepl" {
-#   provisioner "local-exec" {
-#     command = "aws s3api put-bucket-replication --bucket ${local.bucket_name} --replication-configuration ${data.template_file.replication_dest.rendered}"
-#   }
-#   depends_on = [module.replica_bucket]
+#resource "null_resource" "awsdestrepl" {
+#  provisioner "local-exec" {
+#    command = "aws s3api put-bucket-replication --bucket ${local.bucket_name} --replication-configuration ${data.template_file.replication_dest.rendered}"
+#  }
+#  depends_on = [module.replica_bucket]
 
-# }
+#}
