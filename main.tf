@@ -201,6 +201,16 @@ module "s3_bucket" {
     enabled = true
   }
 
+  server_side_encryption_configuration = {
+    rule = {
+      apply_server_side_encryption_by_default = {
+        kms_master_key_id = local.kms_master_key_id
+        sse_algorithm     = "aws:kms"
+      }
+      bucket_key_enabled = true
+    }
+  }
+
   replication_configuration = {
     role = aws_iam_role.replication.arn
 
