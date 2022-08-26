@@ -175,6 +175,16 @@ module "replica_bucket" {
   versioning = {
     enabled = true
   }
+
+  server_side_encryption_configuration = {
+    rule = {
+      apply_server_side_encryption_by_default = {
+        kms_master_key_id = aws_kms_key.replica.arn
+        sse_algorithm     = "aws:kms"
+      }
+      bucket_key_enabled = true
+    }
+  }
 }
 
 module "s3_bucket" {
@@ -249,7 +259,7 @@ module "s3_bucket" {
               status = "Enabled"
             }
             sse_kms_encrypted_objects = {
-              enabled = false
+              enabled = true
             }
           }
 

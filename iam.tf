@@ -57,6 +57,40 @@ resource "aws_iam_policy" "replication" {
       ],
       "Effect": "Allow",
       "Resource": "arn:aws:s3:::${local.destination_bucket_name}/*"
+    },
+    {
+      "Action": [
+        "kms:Decrypt"
+      ],
+      "Effect": "Allow",
+      "Condition": {
+        "StringLike": {
+          "kms:ViaService": "s3.${local.origin_region}.amazonaws.com",
+          "kms:EncryptionContext:aws:s3:arn": [
+            "arn:aws:s3:::${local.bucket_name}"
+          ]
+        }
+      },
+      "Resource": [
+        "${local.kms_master_key_id}"
+      ]
+    },
+    {
+    "Action": [
+      "kms:Encrypt"
+    ],
+      "Effect": "Allow",
+      "Condition": {
+        "StringLike": {
+          "kms:ViaService": "s3.${local.replica_region}.amazonaws.com",
+          "kms:EncryptionContext:aws:s3:arn": [
+            "arn:aws:s3:::${local.destination_bucket_name}"
+          ]
+        }
+      },
+      "Resource": [
+        "${local.kms_master_key_id}"
+      ]
     }
   ]
 }
