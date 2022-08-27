@@ -237,7 +237,7 @@ module "s3_bucket" {
           bucket        = "arn:aws:s3:::${local.destination_bucket_name}"
           storage_class = "STANDARD_IA"
 
-          # replica_kms_key_id = aws_kms_key.replica.arn
+          replica_kms_key_id = aws_kms_key.replica.arn
           account_id = data.aws_caller_identity.current.account_id
 
           access_control_translation = {
@@ -255,11 +255,8 @@ module "s3_bucket" {
           }
 
           source_selection_criteria = {
-            replica_modifications = {
-              status = "Enabled"
-            }
             sse_kms_encrypted_objects = {
-              enabled = true
+              enabled = "true"
             }
           }
 
@@ -276,19 +273,3 @@ module "s3_bucket" {
   }
   depends_on = [module.replica_bucket]
 }
-
-#data "template_file" "replication_dest" {
-#  template = "${file("replication.json")}"
-#  vars = {
-#    bucketarn = "${module.replica_bucket.s3_bucket_arn}"
-#    rolearn = "${aws_iam_role.replication.arn}"
-#  }
-#}
-
-#resource "null_resource" "awsdestrepl" {
-#  provisioner "local-exec" {
-#    command = "aws s3api put-bucket-replication --bucket ${local.bucket_name} --replication-configuration ${data.template_file.replication_dest.rendered}"
-#  }
-#  depends_on = [module.replica_bucket]
-
-#}
